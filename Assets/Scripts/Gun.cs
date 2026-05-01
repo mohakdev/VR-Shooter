@@ -30,7 +30,10 @@ public class Gun : MonoBehaviour
     {
         currentAmmo = magazineSize;
         firePoint = transform.Find("FirePoint");
-        ammoText.text = currentAmmo.ToString() + "/" + magazineSize.ToString();
+        if (ammoText)
+        {
+            ammoText.text = currentAmmo.ToString() + "/" + magazineSize.ToString();
+        }
     }
 
     // ?? This is the ONLY method external systems call
@@ -41,7 +44,9 @@ public class Gun : MonoBehaviour
         PlayGunSound();
         MuzzleFlash();
         Shoot();
-        ammoText.text = currentAmmo.ToString() + "/" + magazineSize.ToString();
+        if (ammoText) { 
+            ammoText.text = currentAmmo.ToString() + "/" + magazineSize.ToString();
+        }
         lastFireTime = Time.time;
         return true;
     }
@@ -72,11 +77,11 @@ public class Gun : MonoBehaviour
             print("Shot Reaching");
             if (Physics.Raycast(firePoint.position, direction, out RaycastHit hit, range))
             {
-                var damageable = hit.collider.GetComponent<Transform>();
+                var damageable = hit.collider.GetComponent<Health>();
                 print("Shot : " + damageable);
 
-                //if (damageable != null)
-                //    damageable.TakeDamage(damage);
+                if (damageable != null)
+                    damageable.TakeDamage(damage);
             }
         }
     }
@@ -96,9 +101,15 @@ public class Gun : MonoBehaviour
     IEnumerator StartReloading()
     {
         gunSFX.PlayAudioOnce(SoundTypes.ReloadSound);
-        ammoText.text = "Reloading...";
+        if(ammoText)
+        {
+            ammoText.text = "Reloading...";
+        }
         yield return new WaitForSeconds(reloadTime);
         currentAmmo = magazineSize;
-        ammoText.text = currentAmmo.ToString() + "/" + magazineSize.ToString(); 
+        if (ammoText)
+        {
+            ammoText.text = currentAmmo.ToString() + "/" + magazineSize.ToString();
+        }
     }
 }

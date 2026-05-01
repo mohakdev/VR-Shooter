@@ -1,5 +1,4 @@
-using RadiantTools.AudioSystem;
-using TMPro;
+﻿using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.XR.Interaction.Toolkit;
@@ -7,53 +6,71 @@ using UnityEngine.XR.Interaction.Toolkit;
 public class XRGunController : MonoBehaviour
 {
     private Gun currentGun;
+    private ITool currentTool;
+
     [SerializeField] TextMeshProUGUI gunText;
 
     private XRBaseInteractor interactor;
     private ActionBasedController controller;
+
     public InputActionProperty reloadAction;
 
     void Awake()
     {
-        // Get both systems
         interactor = GetComponent<XRBaseInteractor>();
         controller = GetComponent<ActionBasedController>();
 
-        // Listen for grab events
         interactor.selectEntered.AddListener(OnGrab);
         interactor.selectExited.AddListener(OnRelease);
     }
 
     void OnGrab(SelectEnterEventArgs args)
     {
-        currentGun = args.interactableObject.transform.GetComponent<Gun>();
-        gunText.text = currentGun.name;
+        Transform obj = args.interactableObject.transform;
+
+        currentGun = obj.GetComponent<Gun>();
+        currentTool = obj.GetComponent<ITool>();
+
+        gunText.text = obj.name;
     }
 
     void OnRelease(SelectExitEventArgs args)
     {
         currentGun = null;
+        currentTool = null;
         gunText.text = "";
     }
 
     void Update()
     {
-        if (currentGun == null || controller == null) return;
+        if (controller == null) return;
 
         var activate = controller.activateAction.action;
 
-        if (currentGun.isAutomatic)
+        bool isHeld = activate.IsPressed();
+        bool pressedThisFrame = activate.WasPressedThisFrame();
+
+        if (currentGun != null)
         {
-            if (activate.IsPressed())
-                currentGun.TryShoot();
+            if (currentGun.isAutomatic)
+            {
+                if (isHeld)
+                    currentGun.TryShoot();
+            }
+            else
+            {
+                if (pressedThisFrame)
+                    currentGun.TryShoot();
+            }
+
+            HandleReload();
         }
-        else
+        if (currentTool != null)
         {
-            if (activate.WasPressedThisFrame())
-                currentGun.TryShoot();
+            currentTool.OnPrimaryAction(isHeld, pressedThisFrame);
         }
-        HandleReload();
     }
+
     void HandleReload()
     {
         var reload = reloadAction.action;
