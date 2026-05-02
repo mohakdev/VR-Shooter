@@ -421,6 +421,10 @@ PrefabInstance:
       value: Soldier
       objectReference: {fileID: 0}
     - target: {fileID: 100060, guid: fcb334eb247ae3e488abb081c847cf09, type: 3}
+      propertyPath: m_Layer
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 100060, guid: fcb334eb247ae3e488abb081c847cf09, type: 3}
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
@@ -583,7 +587,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bbe3b0ffadd4d2948b83c465187f1e2b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  target: {fileID: 7362860460146907825, guid: 02cebd389bf00a240aebbcce2f1be0df, type: 3}
+  isArrested: 0
+  isStunned: 0
+  isGassed: 0
   gun: {fileID: 7239419577434240703}
   firePoint: {fileID: 8276655763224477707}
   moveSpeed: 3

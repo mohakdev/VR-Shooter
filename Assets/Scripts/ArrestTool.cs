@@ -8,16 +8,15 @@ public class ArrestTool : MonoBehaviour, ITool
     public void OnPrimaryAction(bool isHeld, bool pressedThisFrame)
     {
         if (!pressedThisFrame) return;
-
+        print("Tool Used");
         Collider[] hits = Physics.OverlapSphere(transform.position, range, enemyLayer);
-
+        print(hits);
         foreach (var hit in hits)
         {
             var ai = hit.GetComponentInParent<AIBotController>();
-
             if (ai != null && !ai.isArrested)
             {
-                //ai.Arrest();
+                ai.Arrest();
                 return;
             }
         }

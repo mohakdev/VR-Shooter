@@ -10,7 +10,6 @@ public class AutoDestroy : MonoBehaviour
 
     void SelfDestruct()
     {
-        print("Particle Pos "+ transform.position);
         Destroy(gameObject);
     }
 }

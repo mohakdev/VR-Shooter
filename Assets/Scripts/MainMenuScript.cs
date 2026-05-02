@@ -13,8 +13,8 @@ public class MainMenuScript : MonoBehaviour
 
     void Awake()
     {
-        deathScreen = GameObject.FindGameObjectWithTag("DeathUI");
-        mainMenu = GameObject.FindGameObjectWithTag("MainUI");
+        deathScreen = transform.Find("DeathUI").gameObject;
+        mainMenu = transform.Find("MainUI").gameObject;
         deathScreen.SetActive(false);
     }
 
@@ -27,7 +27,10 @@ public class MainMenuScript : MonoBehaviour
     {
         if(mainMenu)    mainMenu.SetActive(false);
         if(deathScreen) deathScreen.SetActive(false);
-        SceneManager.LoadScene(PlayScene);
+        if (SceneManager.GetActiveScene().buildIndex != PlayScene)
+        {
+            SceneManager.LoadScene(PlayScene);
+        }
     }
     public static void TravelToMainMenu()
     {
@@ -35,8 +38,8 @@ public class MainMenuScript : MonoBehaviour
         {
             SceneManager.LoadScene(MenuScene);
         }
-        deathScreen.SetActive(false);
-        mainMenu.SetActive(true);
+        if (deathScreen) deathScreen.SetActive(false);
+        if (mainMenu) mainMenu.SetActive(true);
     }
     public static void TravelToDeathScreen()
     {

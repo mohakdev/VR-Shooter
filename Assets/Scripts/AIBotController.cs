@@ -1,8 +1,12 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using UnityEngine;
 
 public class AIBotController : MonoBehaviour
 {
-    public bool isArrested = false; 
+    [Header("States")]
+    public bool isArrested = false;
+    public bool isStunned = false;
+    public bool isGassed = false;
 
     [Header("References")]
     Transform target;
@@ -26,18 +30,36 @@ public class AIBotController : MonoBehaviour
     private float lastFireTime;
     private float seenPlayerTime;
 
+    private Coroutine stunRoutine;
+    private Coroutine gasRoutine;
+
     void Awake()
     {
-        target = GameObject.FindGameObjectWithTag("Player").transform;    
+        target = GameObject.FindGameObjectWithTag("Player").transform;
+        animator = GetComponent<Animator>();
     }
 
     void Update()
     {
         if (target == null || gun == null) return;
-        if(!animator) { animator = GetComponent<Animator>(); }
-        float distance = Vector3.Distance(transform.position, target.position);
 
-        if(isArrested) { return; }
+        if (isArrested)
+        {
+            SetAnim("IsArrested", true);
+            return;
+        }
+
+        if (isStunned)
+        {
+            SetAnim("IsStunned", true);
+            return;
+        }
+        else
+        {
+            SetAnim("IsStunned", false);
+        }
+
+        float distance = Vector3.Distance(transform.position, target.transform.position);
 
         HandleMovement(distance);
         HandleRotation();
@@ -57,13 +79,19 @@ public class AIBotController : MonoBehaviour
         {
             seenPlayerTime = 0f;
         }
-        if(gun.currentAmmo == 0) { gun.Reload(); }
-        if(animator.GetBool("IsRunning") != IsRunning()) { animator.SetBool("IsRunning", IsRunning()); }
+
+        // Auto reload
+        if (gun.currentAmmo == 0)
+            gun.Reload();
+
+        SetAnim("IsRunning", IsRunning());
     }
+
+    // ---------------- MOVEMENT ----------------
 
     void HandleMovement(float distance)
     {
-        Vector3 direction = (target.position - transform.position).normalized;
+        Vector3 direction = (target.transform.position - transform.position).normalized;
 
         if (distance > stopDistance)
         {
@@ -73,12 +101,9 @@ public class AIBotController : MonoBehaviour
 
     void Move(Vector3 direction)
     {
-        // Basic obstacle avoidance
-
-        if (Physics.Raycast(transform.position + Vector3.forward, direction, out RaycastHit hit, 3f))
+        // Simple obstacle avoidance
+        if (Physics.Raycast(transform.position + Vector3.up, direction, 3f))
         {
-            Debug.LogWarning("Obstacle " + hit.collider.gameObject);
-            // try sidestep
             direction = Vector3.Cross(direction, Vector3.up);
         }
 
@@ -87,20 +112,22 @@ public class AIBotController : MonoBehaviour
 
     void HandleRotation()
     {
-        Vector3 lookDir = target.position - transform.position;
+        Vector3 lookDir = target.transform.position - transform.position;
         lookDir.y = 0;
 
         Quaternion targetRot = Quaternion.LookRotation(lookDir);
         transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, rotationSpeed * Time.deltaTime);
     }
 
+    // ---------------- COMBAT ----------------
+
     bool CheckLineOfSight()
     {
-        Vector3 direction = (target.position - firePoint.position).normalized;
+        Vector3 direction = (target.transform.position - firePoint.position).normalized;
 
         if (Physics.Raycast(firePoint.position, direction, out RaycastHit hit, 100f))
         {
-            return hit.transform.root == target.root;
+            return hit.transform.root == target.root;        
         }
 
         return false;
@@ -108,7 +135,7 @@ public class AIBotController : MonoBehaviour
 
     void AimAtTarget()
     {
-        Vector3 direction = target.position - firePoint.position;
+        Vector3 direction = target.transform.position - firePoint.position;
 
         float spread = aimInaccuracy;
 
@@ -122,13 +149,15 @@ public class AIBotController : MonoBehaviour
 
     void TryShoot(float distance)
     {
+        if (isGassed) return;
+
         if (Time.time - lastFireTime < fireCooldown) return;
 
         float distanceFactor = distance * 0.01f;
 
         if (Random.value < 1f - distanceFactor)
         {
-            if(!animator.GetBool("IsShooting")){ animator.SetBool("IsShooting", true); }
+            SetAnim("IsShooting", true);
             gun.TryShoot();
         }
 
@@ -137,7 +166,84 @@ public class AIBotController : MonoBehaviour
 
     bool IsRunning()
     {
-        // crude but effective
-        return Vector3.Distance(transform.position, target.position) > stopDistance;
+        return Vector3.Distance(transform.position, target.transform.position) > stopDistance;
+    }
+
+    // ---------------- EFFECTS ----------------
+
+    public void ApplyStun(float duration)
+    {
+        if (isArrested) return;
+
+        if (stunRoutine != null)
+            StopCoroutine(stunRoutine);
+
+        stunRoutine = StartCoroutine(StunRoutine(duration));
+    }
+
+    IEnumerator StunRoutine(float duration)
+    {
+        isStunned = true;
+
+        yield return new WaitForSeconds(duration);
+
+        isStunned = false;
+    }
+
+    public void ApplyGas(float duration, float dps)
+    {
+        if (isArrested) return;
+
+        if (gasRoutine != null)
+            StopCoroutine(gasRoutine);
+
+        gasRoutine = StartCoroutine(GasRoutine(duration, dps));
+    }
+
+    IEnumerator GasRoutine(float duration, float dps)
+    {
+        isGassed = true;
+
+        float timer = 0f;
+        var health = GetComponent<Health>();
+
+        while (timer < duration)
+        {
+            if (health != null)
+            {
+                health.TakeDamage(dps * Time.deltaTime);
+            }
+
+            timer += Time.deltaTime;
+            yield return null;
+        }
+
+        isGassed = false;
+    }
+
+    public void Arrest()
+    {
+        if (isArrested) return;
+
+        isArrested = true;
+        print("Arrested Enemy");
+        // Stop everything
+        isStunned = false;
+        isGassed = false;
+
+        if (stunRoutine != null) StopCoroutine(stunRoutine);
+        if (gasRoutine != null) StopCoroutine(gasRoutine);
+
+        SetAnim("IsArrested", true);
+    }
+
+    // ---------------- UTIL ----------------
+
+    void SetAnim(string param, bool value)
+    {
+        if (!animator) return;
+
+        if (animator.GetBool(param) != value)
+            animator.SetBool(param, value);
     }
 }

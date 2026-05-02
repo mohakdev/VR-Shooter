@@ -74,11 +74,9 @@ public class Gun : MonoBehaviour
         for (int i = 0; i < bulletsPerShot; i++)
         {
             Vector3 direction = GetSpreadDirection();
-            print("Shot Reaching");
             if (Physics.Raycast(firePoint.position, direction, out RaycastHit hit, range))
             {
                 var damageable = hit.collider.GetComponent<Health>();
-                print("Shot : " + damageable);
 
                 if (damageable != null)
                     damageable.TakeDamage(damage);

@@ -18,7 +18,7 @@ public class TearGasTool : MonoBehaviour, ITool
             var ai = hit.GetComponentInParent<AIBotController>();
             if (ai != null)
             {
-                //ai.ApplyGas(duration, damagePerSecond);
+                ai.ApplyGas(duration, damagePerSecond);
             }
         }
     }
